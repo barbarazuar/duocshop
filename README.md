@@ -1,64 +1,331 @@
-# Visión General de DuocShop  
-  
-DuocShop es una plataforma de comercio electrónico desarrollada con Spring Boot. El sistema está estructurado siguiendo una arquitectura de tres capas:  
-  
-1. **Capa de Controladores**: Maneja las solicitudes HTTP y devuelve respuestas apropiadas  
-2. **Capa de Servicios**: Contiene la lógica de negocio  
-3. **Capa de Repositorios**: Gestiona el acceso a datos  
-  
-## Principales Componentes del Sistema  
-  
-### Gestión de Usuarios  
-  
-El sistema permite la gestión de usuarios a través de la entidad `Usuario`. Los usuarios tienen información personal y están asociados a una sede específica. [1](#1-0)   
-  
-La API de usuarios proporciona los siguientes endpoints:  
-- `GET /api/v1/usuario`: Listar todos los usuarios  
-- `POST /api/v1/usuario`: Crear un nuevo usuario  
-- `PUT /api/v1/usuario/{id}`: Actualizar todos los atributos de un usuario  
-- `PATCH /api/v1/usuario/{id}`: Actualizar atributos específicos de un usuario  
-- `DELETE /api/v1/usuario/{id}`: Eliminar un usuario [2](#1-1)   
-  
-### Gestión de Categorías  
-  
-El sistema permite organizar productos en categorías lógicas. La gestión de categorías se realiza a través de dos entidades principales:  
-- `Categoria`: Representa una categoría de producto con un identificador único y nombre [3](#1-2)   
-- `CategoriaProducto`: Representa la relación muchos a muchos entre categorías y productos  
-  
-La API de categorías proporciona endpoints similares a los de usuarios:  
-- `GET /api/v1/categoria`: Listar todas las categorías  
-- `POST /api/v1/categoria`: Crear una nueva categoría  
-- `PUT /api/v1/categoria/{id}`: Actualizar una categoría existente  
-- `PATCH /api/v1/categoria/{id}`: Actualizar parcialmente una categoría  
-- `DELETE /api/v1/categoria/{id}`: Eliminar una categoría [4](#1-3)   
-  
-### Gestión de Sedes  
-  
-El sistema también maneja sedes o ubicaciones físicas, representadas por la entidad `Sede`. Los usuarios están asociados a una sede específica. [5](#1-4)   
-  
-## Arquitectura Técnica  
-  
-DuocShop está construido con las siguientes tecnologías:  
-- **Spring Boot**: Framework principal para el desarrollo de la aplicación  
-- **Spring Data JPA**: Para la persistencia de datos  
-- **Lombok**: Para reducir código repetitivo en las entidades  
-  
-La aplicación sigue el patrón de diseño MVC (Modelo-Vista-Controlador) y utiliza anotaciones de Spring para definir componentes como controladores, servicios y repositorios.  
-  
-## Flujo de Datos  
-  
-El flujo típico de datos en la aplicación es el siguiente:  
-1. El cliente envía una solicitud HTTP a un endpoint específico  
-2. El controlador correspondiente recibe la solicitud [6](#1-5)   
-3. El controlador llama al servicio apropiado [7](#1-6)   
-4. El servicio utiliza el repositorio para acceder a los datos  
-5. El repositorio interactúa con la base de datos  
-6. Los datos fluyen de vuelta a través de las capas hasta el cliente  
-  
-## Manejo de Errores  
-  
-Los controladores implementan un manejo básico de errores mediante bloques try-catch y códigos de estado HTTP apropiados:  
-- **200 OK**: Solicitud GET, PUT o PATCH exitosa  
-- **201 Created**: Solicitud POST exitosa [8](#1-7)   
-- **204 No Content**: Solicitud DELETE exitosa o resultado GET vacío [9](#1-8)   
-- **404 Not Found**: Recurso no encontrado (durante operaciones de actualización, parche o eliminación) [10](#1-9)
+# Reporte de Arquitectura - DuocShop
+
+## Resumen Ejecutivo
+
+DuocShop es una aplicación de comercio electrónico desarrollada con Spring Boot que sigue una arquitectura de capas bien definida. El sistema implementa el patrón MVC (Modelo-Vista-Controlador) y utiliza tecnologías modernas para el desarrollo de APIs REST.
+
+---
+
+## 📚 Arquitectura General
+
+La aplicación está estructurada en las siguientes capas principales:
+
+1. **Capa de Presentación (Controllers)**
+2. **Capa de Lógica de Negocio (Services)**
+3. **Capa de Acceso a Datos (Repositories)**
+4. **Capa de Modelos (Entities/Models)**
+5. **Componentes Auxiliares (DTOs, Assemblers)**
+
+---
+
+## 🏗️ Descripción Detallada de Componentes
+
+### 1. **Models (Entidades de Dominio)**
+📍 **Ubicación:** `src/main/java/com/duocshop/duocshop/model/`
+
+**Propósito:** Representan las entidades de negocio del sistema y mapean directamente con las tablas de la base de datos.
+
+#### Entidades Principales:
+
+- **`Usuario`**: Representa a los usuarios del sistema
+  - Atributos: id, nombre, apellido, correo, contrasena, sede
+  - Relaciones: ManyToOne con Sede, OneToMany con UsuarioProducto y UsuarioCalificacion
+
+- **`Producto`**: Representa los productos disponibles en la tienda
+  - Atributos: id, nombre, descripcion, precio, marca
+  - Relaciones: ManyToOne con Marca, OneToMany con CategoriaProducto y UsuarioProducto
+
+- **`Categoria`**: Categorías para clasificar productos
+  - Atributos: id, nombre
+  - Relaciones: OneToMany con CategoriaProducto
+
+- **`Marca`**: Marcas de los productos
+  - Atributos: id, nombre
+  - Relaciones: OneToMany con Producto
+
+- **`Sede`**: Ubicaciones físicas o sucursales
+  - Atributos: id, nombre, direccion
+  - Relaciones: OneToMany con Usuario
+
+- **`Calificacion`**: Sistema de puntuación y comentarios
+  - Atributos: id, puntaje, comentario
+  - Relaciones: OneToMany con UsuarioCalificacion
+
+#### Entidades de Relación (Tablas Intermedias):
+
+- **`UsuarioProducto`**: Relación muchos-a-muchos entre Usuario y Producto
+- **`CategoriaProducto`**: Relación muchos-a-muchos entre Categoria y Producto
+- **`UsuarioCalificacion`**: Relación muchos-a-muchos entre Usuario y Calificacion
+
+**Tecnologías utilizadas:**
+- JPA/Hibernate para mapeo objeto-relacional
+- Lombok para reducir código boilerplate (@Data, @Entity, etc.)
+- Jackson para serialización/deserialización JSON
+
+---
+
+### 2. **Repositories (Capa de Acceso a Datos)**
+📍 **Ubicación:** `src/main/java/com/duocshop/duocshop/repository/`
+
+**Propósito:** Abstraen el acceso a la base de datos y proporcionan métodos para realizar operaciones CRUD y consultas personalizadas.
+
+#### Características:
+- Extienden `JpaRepository<Entidad, TipoId>` para funcionalidad básica CRUD
+- Incluyen consultas personalizadas usando `@Query` con JPQL
+- Métodos de búsqueda específicos del dominio
+
+#### Ejemplos de Funcionalidades:
+
+**ProductoRepository:**
+- Búsqueda por marca, categoría, rango de precios
+- Consultas complejas que combinan múltiples criterios (marca + categoría + sede)
+- Búsquedas por calificación y ubicación
+
+**UsuarioProductoRepository:**
+- Consultas para obtener resúmenes de relaciones usuario-producto
+- Métodos para eliminar por usuario o producto específico
+
+**Ventajas:**
+- Separación clara entre lógica de negocio y acceso a datos
+- Reutilización de consultas
+- Optimización automática de consultas por Spring Data JPA
+
+---
+
+### 3. **Services (Capa de Lógica de Negocio)**
+📍 **Ubicación:** `src/main/java/com/duocshop/duocshop/service/`
+
+**Propósito:** Contienen la lógica de negocio de la aplicación y orquestan las operaciones entre controladores y repositorios.
+
+#### Responsabilidades:
+- **Validación de datos de negocio**
+- **Coordinación de operaciones complejas**
+- **Transformación de datos**
+- **Manejo de transacciones** (`@Transactional`)
+
+#### Servicios Principales:
+
+**UsuarioService:**
+- Gestión completa de usuarios (CRUD)
+- Validaciones de negocio específicas
+- Manejo de relaciones con otras entidades
+
+**ProductoService:**
+- Gestión de productos y sus relaciones
+- Búsquedas avanzadas y filtrado
+- Lógica de negocio para consultas complejas
+
+**CategoriaService, MarcaService, SedeService:**
+- Operaciones básicas CRUD para entidades de referencia
+- Validaciones específicas del dominio
+
+**Servicios de Relación:**
+- `UsuarioProductoService`: Manejo de carritos/favoritos
+- `UsuarioCalificacionService`: Sistema de reseñas y puntuaciones
+- `CategoriaProductoService`: Clasificación de productos
+
+**Características técnicas:**
+- Anotación `@Service` para registro automático en Spring
+- `@Transactional` para manejo de transacciones
+- Inyección de dependencias con `@Autowired`
+
+---
+
+### 4. **Controllers (Capa de Presentación)**
+📍 **Ubicación:** `src/main/java/com/duocshop/duocshop/controller/`
+
+**Propósito:** Exponen la funcionalidad del sistema a través de endpoints REST y manejan las solicitudes HTTP.
+
+#### Estructura de Controllers:
+
+**Versión 1 (v1) - API REST Tradicional:**
+- **ProductoController**: CRUD completo + búsquedas avanzadas
+- **UsuarioController**: Gestión de usuarios con DTOs
+- **CategoriaController**: Manejo de categorías
+- **SedeController**: Gestión de sedes
+- **MarcaController**: Operaciones de marcas
+- **UsuarioProductoController**: Relaciones usuario-producto
+- **UsuarioCalificacionController**: Sistema de calificaciones
+
+**Versión 2 (v2) - API con HATEOAS:**
+- Implementa el estándar HATEOAS (Hypermedia as the Engine of Application State)
+- Respuestas enriquecidas con links relacionados
+- Mejor navegabilidad de la API
+
+#### Características de los Controllers:
+
+**Documentación con OpenAPI/Swagger:**
+```java
+@Tag(name = "Producto", description = "Operaciones relacionadas con productos")
+@Operation(summary = "Listar productos")
+@ApiResponses(value = {
+    @ApiResponse(responseCode = "200", description = "Lista de productos obtenida exitosamente"),
+    @ApiResponse(responseCode = "204", description = "No hay productos disponibles")
+})
+```
+
+**Operaciones HTTP Estándar:**
+- `GET`: Consultar datos (listado, búsqueda por ID, filtros)
+- `POST`: Crear nuevos recursos
+- `PUT`: Actualización completa
+- `PATCH`: Actualización parcial
+- `DELETE`: Eliminación de recursos
+
+**Manejo de Respuestas:**
+- Uso de `ResponseEntity<T>` para control completo de respuestas HTTP
+- Códigos de estado apropiados (200, 201, 204, 404, etc.)
+- Manejo de errores y excepciones
+
+---
+
+### 5. **DTOs (Data Transfer Objects)**
+📍 **Ubicación:** `src/main/java/com/duocshop/duocshop/dto/`
+
+**Propósito:** Objetos especializados para transferencia de datos entre capas, especialmente para exponer información sin revelar detalles internos de las entidades.
+
+#### Ejemplo - UsuarioDTO:
+```java
+public class UsuarioDTO {
+    private Integer id;
+    private String nombre;
+    private String apellido;
+    private String correo;
+    private Integer sedeId;
+    private String sedeNombre;
+    // Excluye campos sensibles como contraseña
+}
+```
+
+**Ventajas:**
+- **Seguridad**: Filtran información sensible
+- **Performance**: Reducen payload de red
+- **Flexibilidad**: Permiten diferentes vistas de los mismos datos
+- **Evolución**: Facilitan cambios en la API sin afectar entidades
+
+---
+
+### 6. **Assemblers (HATEOAS)**
+📍 **Ubicación:** `src/main/java/com/duocshop/duocshop/assemblers/`
+
+**Propósito:** Transforman entidades en representaciones HATEOAS con links navegables.
+
+#### Funcionalidad:
+- Implementan `RepresentationModelAssembler<T, EntityModel<T>>`
+- Agregan links relacionados automáticamente
+- Facilitan la navegación entre recursos de la API
+
+#### Ejemplo de Links Generados:
+```java
+EntityModel.of(producto,
+    linkTo(methodOn(ProductoControllerV2.class).getProductoById(producto.getId())).withSelfRel(),
+    linkTo(methodOn(ProductoControllerV2.class).getAllProductos()).withRel("productos"),
+    linkTo(methodOn(ProductoControllerV2.class).createProducto(producto)).withRel("crear")
+);
+```
+
+---
+
+## 🔄 Flujo de Datos
+
+### Flujo Típico de una Solicitud:
+
+1. **Cliente** envía solicitud HTTP al endpoint
+2. **Controller** recibe la solicitud
+3. **Controller** valida parámetros y llama al **Service**
+4. **Service** ejecuta lógica de negocio
+5. **Service** utiliza **Repository** para acceso a datos
+6. **Repository** ejecuta consulta en base de datos
+7. Los datos fluyen de vuelta: **Repository** → **Service** → **Controller**
+8. **Controller** formatea respuesta y la envía al **Cliente**
+
+### Ejemplo Práctico:
+```
+GET /api/v1/productos/categoria/1
+    ↓
+ProductoController.obtenerPorCategoriaId()
+    ↓
+ProductoService.obtenerProductosPorCategoriaId()
+    ↓
+ProductoRepository.findByCategoriaId()
+    ↓
+Base de Datos (consulta JPQL)
+    ↓
+Lista<Producto> → ProductoService → ProductoController → JSON Response
+```
+
+---
+
+## 🛠️ Tecnologías y Patrones Utilizados
+
+### Framework Principal:
+- **Spring Boot**: Framework principal
+- **Spring Data JPA**: Persistencia de datos
+- **Spring Web**: Desarrollo de APIs REST
+- **Spring HATEOAS**: Implementación de APIs hipermedia
+
+### Patrones de Diseño:
+- **MVC (Model-View-Controller)**: Separación de responsabilidades
+- **Repository Pattern**: Abstracción de acceso a datos
+- **Service Layer Pattern**: Encapsulación de lógica de negocio
+- **DTO Pattern**: Transferencia controlada de datos
+- **Dependency Injection**: Gestión de dependencias
+
+### Herramientas de Desarrollo:
+- **Lombok**: Reducción de código repetitivo
+- **OpenAPI/Swagger**: Documentación automática de APIs
+- **Jackson**: Serialización JSON
+- **Maven**: Gestión de dependencias y construcción
+
+---
+
+## 📊 Funcionalidades del Sistema
+
+### Gestión de Entidades:
+- **CRUD completo** para todas las entidades principales
+- **Búsquedas avanzadas** con múltiples criterios
+- **Filtrado** por categoría, marca, precio, calificación, sede
+- **Relaciones complejas** entre entidades
+
+### Características de la API:
+- **Versionado** (v1 y v2) para evolución sin romper compatibilidad
+- **Documentación automática** con Swagger/OpenAPI
+- **Respuestas consistentes** con códigos HTTP apropiados
+- **HATEOAS** para navegabilidad mejorada
+
+### Funcionalidades de Negocio:
+- **Sistema de usuarios** con gestión de sedes
+- **Catálogo de productos** con categorización y marcas
+- **Sistema de calificaciones** y reseñas
+- **Relaciones usuario-producto** (carrito, favoritos)
+- **Búsquedas complejas** combinando múltiples criterios
+
+---
+
+## 🔒 Aspectos de Seguridad y Buenas Prácticas
+
+### Seguridad:
+- **DTOs** para filtrar información sensible
+- **Validación** de datos en múltiples capas
+- **Transacciones** para consistencia de datos
+
+### Buenas Prácticas:
+- **Separación clara de responsabilidades**
+- **Código limpio** con anotaciones descriptivas
+- **Documentación completa** de APIs
+- **Manejo consistente de errores**
+- **Versionado de APIs** para evolución controlada
+
+---
+
+## 📈 Beneficios de esta Arquitectura
+
+1. **Mantenibilidad**: Código organizado y fácil de mantener
+2. **Escalabilidad**: Capas independientes permiten crecimiento
+3. **Testabilidad**: Fácil testing por separación de responsabilidades
+4. **Reutilización**: Servicios y repositorios reutilizables
+5. **Evolución**: APIs versionadas permiten cambios sin romper compatibilidad
+6. **Documentación**: APIs auto-documentadas para facilitar integración
+
+---
+
+*Este reporte proporciona una visión completa de la arquitectura del sistema DuocShop, explicando el propósito y funcionamiento de cada componente dentro del ecosistema Spring Boot.*
